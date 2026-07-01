@@ -1,27 +1,32 @@
 from search_engine import search
 from llm import generate_answer
+from logger import logger
 
 
-def ask_hr_copilot(question, show_chunks=False):
+def ask_hr_copilot(question):
+
+    logger.info(f"Question: {question}")
 
     results = search(question)
 
-    if show_chunks:
+    logger.info(
+        f"Retrieved {len(results)} relevant chunks."
+    )
 
-        print("\n")
-        print("=" * 60)
-        print("Retrieved Chunks")
-        print("=" * 60)
+    print("\n")
+    print("=" * 60)
+    print("Retrieved Chunks")
+    print("=" * 60)
 
-        for i, result in enumerate(results, 1):
+    for i, result in enumerate(results, 1):
 
-            print(f"\nChunk {i}")
-            print("-" * 60)
-            print("Source :", result["source"])
-            print("Page   :", result["page"])
-            print()
+        print(f"\nChunk {i}")
+        print("-" * 60)
+        print("Source :", result["source"])
+        print("Page   :", result["page"])
+        print()
 
-            print(result["content"][:300])
+        print(result["content"][:300])
 
     context = "\n\n".join(
         result["content"]
@@ -32,6 +37,8 @@ def ask_hr_copilot(question, show_chunks=False):
         question,
         context
     )
+
+    logger.info("Answer generated successfully.")
 
     return {
         "answer": answer,
@@ -54,10 +61,7 @@ if __name__ == "__main__":
         if question.lower() == "exit":
             break
 
-        response = ask_hr_copilot(
-            question,
-            show_chunks=True
-        )
+        response = ask_hr_copilot(question)
 
         print("\n")
         print("=" * 60)

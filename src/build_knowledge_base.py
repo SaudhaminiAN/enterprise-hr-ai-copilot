@@ -1,6 +1,7 @@
 import chromadb
 from sentence_transformers import SentenceTransformer
 
+
 from text_chunker import chunk_documents
 
 print("Loading embedding model...")
