@@ -1,52 +1,61 @@
-import json
-
+import chromadb
 from sentence_transformers import SentenceTransformer
+
 from text_chunker import chunk_documents
+
+print("Loading embedding model...")
 
 embedding_model = SentenceTransformer(
     "all-MiniLM-L6-v2"
 )
 
+print("Connecting to ChromaDB...")
 
-def get_embedding(text):
-    return embedding_model.encode(text).tolist()
+client = chromadb.PersistentClient(
+    path="chroma_db"
+)
+
+collection = client.get_or_create_collection(
+    name="hr_policies"
+)
 
 
 def build_knowledge_base():
 
     chunks = chunk_documents()
 
-    knowledge_base = []
+    print(f"\nFound {len(chunks)} chunks")
 
-    for chunk in chunks:
+    # Remove old data
+    existing = collection.get()
 
-        embedding = get_embedding(
+    if existing["ids"]:
+        collection.delete(ids=existing["ids"])
+
+    print("Old collection cleared.")
+
+    for i, chunk in enumerate(chunks):
+
+        embedding = embedding_model.encode(
             chunk["content"]
+        ).tolist()
+
+        collection.add(
+            ids=[str(i)],
+            embeddings=[embedding],
+            documents=[chunk["content"]],
+            metadatas=[
+                {
+                    "source": chunk["source"],
+                    "page": chunk["page"]
+                }
+            ]
         )
 
-        knowledge_base.append(
-            {
-                "content": chunk["content"],
-                "source": chunk["source"],
-                "page": chunk["page"],
-                "embedding": embedding
-            }
-        )
-
-    with open(
-        "knowledge_base.json",
-        "w",
-        encoding="utf-8"
-    ) as f:
-
-        json.dump(
-            knowledge_base,
-            f
-        )
-
-    print(
-        f"Stored {len(knowledge_base)} chunks"
-    )
+    print("\n===================================")
+    print("Knowledge Base Created Successfully")
+    print("===================================")
+    print(f"Stored {len(chunks)} chunks in ChromaDB")
 
 
 if __name__ == "__main__":

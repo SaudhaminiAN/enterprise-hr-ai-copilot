@@ -1,78 +1,68 @@
-import json
-import requests
-import numpy as np
+from sentence_transformers import SentenceTransformer
+import chromadb
 
+print("Loading embedding model...")
 
-def get_embedding(text):
+embedding_model = SentenceTransformer(
+    "all-MiniLM-L6-v2"
+)
 
-    response = requests.post(
-        "http://localhost:11434/api/embeddings",
-        json={
-            "model": "nomic-embed-text",
-            "prompt": text
-        }
-    )
+print("Connecting to ChromaDB...")
 
-    return response.json()["embedding"]
+client = chromadb.PersistentClient(
+    path="chroma_db"
+)
 
-
-def cosine_similarity(a, b):
-
-    a = np.array(a)
-    b = np.array(b)
-
-    return np.dot(a, b) / (
-        np.linalg.norm(a) * np.linalg.norm(b)
-    )
+collection = client.get_collection(
+    "hr_policies"
+)
 
 
 def search(query, top_k=3):
 
-    with open(
-        "knowledge_base.json",
-        "r",
-        encoding="utf-8"
-    ) as f:
+    query_embedding = embedding_model.encode(
+        query
+    ).tolist()
 
-        knowledge_base = json.load(f)
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=top_k
+    )
 
-    query_embedding = get_embedding(query)
+    output = []
 
-    results = []
+    for i in range(len(results["documents"][0])):
 
-    for item in knowledge_base:
-
-        score = cosine_similarity(
-            query_embedding,
-            item["embedding"]
-        )
-
-        results.append(
+        output.append(
             {
-                "score": score,
-                "content": item["content"],
-                "source": item["source"],
-                "page": item["page"]
+                "content": results["documents"][0][i],
+                "source": results["metadatas"][0][i]["source"],
+                "page": results["metadatas"][0][i]["page"],
+                "distance": results["distances"][0][i]
             }
         )
 
-    results.sort(
-        key=lambda x: x["score"],
-        reverse=True
-    )
-
-    return results[:top_k]
+    return output
 
 
 if __name__ == "__main__":
 
-    query = "How many casual leaves are allowed?"
+    question = "How many casual leaves are allowed?"
 
-    results = search(query)
+    results = search(question)
 
-    for i, result in enumerate(results, 1):
+    print("\n")
 
-        print(f"\nResult {i}")
-        print("-" * 50)
-        print("Score:", result["score"])
-        print(result["content"][:500])
+    for i, r in enumerate(results, 1):
+
+        print("=" * 60)
+        print(f"Result {i}")
+        print("=" * 60)
+
+        print("Source :", r["source"])
+        print("Page   :", r["page"])
+        print("Distance:", round(r["distance"], 4))
+        print()
+
+        print(r["content"][:500])
+        print()
