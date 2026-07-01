@@ -2,34 +2,41 @@ from search_engine import search
 from llm import generate_answer
 
 
-def ask_hr_copilot(question):
+def ask_hr_copilot(question, show_chunks=False):
 
     results = search(question)
 
-    print("\n")
-    print("=" * 60)
-    print("Retrieved Chunks")
-    print("=" * 60)
+    if show_chunks:
 
-    for i, result in enumerate(results, 1):
+        print("\n")
+        print("=" * 60)
+        print("Retrieved Chunks")
+        print("=" * 60)
 
-        print(f"\nChunk {i}")
-        print("-" * 60)
-        print("Source :", result["source"])
-        print("Page   :", result["page"])
-        print()
+        for i, result in enumerate(results, 1):
 
-        print(result["content"][:300])
+            print(f"\nChunk {i}")
+            print("-" * 60)
+            print("Source :", result["source"])
+            print("Page   :", result["page"])
+            print()
+
+            print(result["content"][:300])
 
     context = "\n\n".join(
         result["content"]
         for result in results
     )
 
-    return generate_answer(
+    answer = generate_answer(
         question,
         context
     )
+
+    return {
+        "answer": answer,
+        "sources": results
+    }
 
 
 if __name__ == "__main__":
@@ -47,10 +54,14 @@ if __name__ == "__main__":
         if question.lower() == "exit":
             break
 
-        answer = ask_hr_copilot(question)
+        response = ask_hr_copilot(
+            question,
+            show_chunks=True
+        )
 
         print("\n")
         print("=" * 60)
         print("ANSWER")
         print("=" * 60)
-        print(answer)
+
+        print(response["answer"])

@@ -26,14 +26,14 @@ def build_knowledge_base():
 
     print(f"\nFound {len(chunks)} chunks")
 
-    # Remove old data
+    # Clear old collection
     existing = collection.get()
 
     if existing["ids"]:
         collection.delete(ids=existing["ids"])
+        print("Old collection cleared.")
 
-    print("Old collection cleared.")
-
+    # Add new chunks
     for i, chunk in enumerate(chunks):
 
         embedding = embedding_model.encode(
@@ -56,6 +56,9 @@ def build_knowledge_base():
     print("Knowledge Base Created Successfully")
     print("===================================")
     print(f"Stored {len(chunks)} chunks in ChromaDB")
+
+    # ⭐ Return chunk count so Streamlit can display it
+    return len(chunks)
 
 
 if __name__ == "__main__":
