@@ -1,12 +1,13 @@
 import os
 import sys
+import time
 
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-# --------------------------------------------------
-# Add src folder
-# --------------------------------------------------
+# ==================================================
+# Add src folder to Python path
+# ==================================================
 
 sys.path.append(
     os.path.abspath(
@@ -20,26 +21,26 @@ sys.path.append(
 
 from hr_copilot import ask_hr_copilot
 
-# --------------------------------------------------
-# FastAPI
-# --------------------------------------------------
+# ==================================================
+# FastAPI App
+# ==================================================
 
 app = FastAPI(
     title="Enterprise HR AI Copilot API",
-    version="1.0.0",
-    description="Enterprise HR AI Copilot powered by Gemini and ChromaDB"
+    description="Enterprise HR AI Copilot powered by Gemini and ChromaDB",
+    version="1.0.0"
 )
 
-# --------------------------------------------------
-# Models
-# --------------------------------------------------
+# ==================================================
+# Request Model
+# ==================================================
 
 class QuestionRequest(BaseModel):
     question: str
 
-# --------------------------------------------------
+# ==================================================
 # Home
-# --------------------------------------------------
+# ==================================================
 
 @app.get("/")
 def home():
@@ -50,9 +51,9 @@ def home():
         "status": "Running"
     }
 
-# --------------------------------------------------
+# ==================================================
 # Health Check
-# --------------------------------------------------
+# ==================================================
 
 @app.get("/health")
 def health():
@@ -61,13 +62,28 @@ def health():
         "status": "healthy"
     }
 
-# --------------------------------------------------
-# Ask
-# --------------------------------------------------
+# ==================================================
+# Ask HR Copilot
+# ==================================================
 
 @app.post("/ask")
 def ask(request: QuestionRequest):
 
-    return ask_hr_copilot(
+    start_time = time.time()
+
+    response = ask_hr_copilot(
         request.question
     )
+
+    elapsed = round(
+        time.time() - start_time,
+        2
+    )
+
+    return {
+        "success": True,
+        "question": request.question,
+        "answer": response["answer"],
+        "sources": response["sources"],
+        "response_time": elapsed
+    }
